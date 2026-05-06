@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MarketFind Navigator - Professional Blue Design System */
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 217 91% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 25% 25%;
+
+    --muted: 210 30% 95%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 45%;
+
+    --radius: 0.75rem;
+
+    /* Custom MarketFind colors */
+    --store-navy: 215 50% 23%;
+    --store-blue: 217 91% 45%;
+    --store-light-blue: 199 89% 48%;
+    --store-sky: 199 92% 64%;
+    --store-slate: 215 20% 65%;
+
+    /* Status colors */
+    --success: 142 76% 36%;
+    --success-foreground: 142 76% 97%;
+    --success-light: 142 76% 94%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 45 92% 20%;
+    --warning-light: 48 96% 89%;
+    --info: 217 91% 60%;
+    --info-foreground: 217 91% 97%;
+    --info-light: 214 95% 93%;
+    
+    /* Section colors for the store map */
+    --section-fruits: 142 76% 36%;
+    --section-dairy: 199 89% 48%;
+    --section-bakery: 35 92% 50%;
+    --section-meats: 0 72% 51%;
+    --section-beverages: 262 83% 58%;
+    --section-cleaning: 172 66% 50%;
+    --section-frozen: 199 89% 65%;
+    --section-snacks: 25 95% 53%;
+
+    --sidebar-background: 215 50% 23%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 40% 30%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 35% 35%;
+    --sidebar-ring: 199 89% 48%;
+  }
+
+  .dark {
+    --background: 215 50% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 215 45% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 215 45% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 40% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 35% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 35% 22%;
+    --input: 215 35% 22%;
+    --ring: 199 89% 48%;
+
+    /* Status colors (dark) */
+    --success: 142 71% 45%;
+    --success-foreground: 142 76% 97%;
+    --success-light: 142 40% 18%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 48 96% 89%;
+    --warning-light: 45 40% 18%;
+    --info: 217 91% 60%;
+    --info-foreground: 214 95% 93%;
+    --info-light: 217 40% 18%;
+
+    --sidebar-background: 215 50% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 40% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 35% 20%;
+    --sidebar-ring: 199 89% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+  
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px hsl(var(--store-navy) / 0.1), 
+                0 2px 4px -2px hsl(var(--store-navy) / 0.1);
+  }
+  
+  .card-shadow-lg {
+    box-shadow: 0 10px 15px -3px hsl(var(--store-navy) / 0.1), 
+                0 4px 6px -4px hsl(var(--store-navy) / 0.1);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--store-navy)) 0%, hsl(var(--store-blue)) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--store-blue)) 0%, hsl(var(--store-light-blue)) 100%);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background: linear-gradient(135deg, hsl(var(--store-blue)) 0%, hsl(var(--store-light-blue)) 100%);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--store-slate));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--store-blue));
+}
+
+/* =============================================
+   DARK MODE OVERRIDES GLOBAIS
+   Sobreescreve classes Tailwind hardcoded
+   ============================================= */
+
+/* Backgrounds */
+.dark .bg-white { background-color: hsl(215 45% 12%) !important; }
+.dark .bg-slate-50 { background-color: hsl(215 42% 14%) !important; }
+.dark .bg-slate-100 { background-color: hsl(215 38% 18%) !important; }
+.dark .bg-slate-200 { background-color: hsl(215 35% 22%) !important; }
+
+/* Hover backgrounds */
+.dark .hover\:bg-white:hover { background-color: hsl(215 45% 14%) !important; }
+.dark .hover\:bg-slate-50:hover { background-color: hsl(215 42% 17%) !important; }
+.dark .hover\:bg-slate-100:hover { background-color: hsl(215 38% 22%) !important; }
+.dark .hover\:bg-slate-200:hover { background-color: hsl(215 35% 26%) !important; }
+
+/* Text */
+.dark .text-slate-900 { color: hsl(210 40% 96%) !important; }
+.dark .text-slate-800 { color: hsl(210 30% 90%) !important; }
+.dark .text-slate-700 { color: hsl(215 20% 80%) !important; }
+.dark .text-slate-600 { color: hsl(215 15% 65%) !important; }
+.dark .text-slate-500 { color: hsl(215 12% 52%) !important; }
+
+/* Hover text */
+.dark .hover\:text-slate-900:hover { color: hsl(210 40% 98%) !important; }
+.dark .hover\:text-slate-800:hover { color: hsl(210 30% 92%) !important; }
+
+/* Borders */
+.dark .border-slate-100 { border-color: hsl(215 35% 18%) !important; }
+.dark .border-slate-200 { border-color: hsl(215 35% 22%) !important; }
+.dark .border-slate-300 { border-color: hsl(215 30% 28%) !important; }
+
+/* Divide */
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: hsl(215 35% 22%) !important; }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: hsl(215 35% 18%) !important; }
+
+/* Ring */
+.dark .ring-slate-200 { --tw-ring-color: hsl(215 35% 22%) !important; }
+
+/* White text stays white */
+.dark .text-white { color: hsl(0 0% 100%) !important; }
+
+/* Transparent/glass backgrounds */
+.dark .bg-white\/80 { background-color: hsl(215 45% 12% / 0.8) !important; }
+.dark .bg-white\/10 { background-color: hsl(215 40% 98% / 0.1) !important; }
+.dark .bg-white\/5 { background-color: hsl(215 40% 98% / 0.05) !important; }
+
+/* Inputs in dark */
+.dark input,
+.dark textarea,
+.dark select {
+  color-scheme: dark;
+}
+

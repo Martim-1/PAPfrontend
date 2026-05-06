@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MarketFind Navigator</string>
+    <string name="title_activity_main">MarketFind Navigator</string>
+    <string name="package_name">app.lovable.ce423636887c4df2a0d83028b09a139e</string>
+    <string name="custom_url_scheme">app.lovable.ce423636887c4df2a0d83028b09a139e</string>
+</resources>
