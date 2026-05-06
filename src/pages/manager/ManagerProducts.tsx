@@ -68,7 +68,7 @@ const ManagerProducts: React.FC = () => {
     }
     fetchProducts();
     fetchSections();
-  }, [user?.storeId, toast]);
+  }, [user?.storeId]);
 
   useEffect(() => {
     if (!user?.storeId) return;

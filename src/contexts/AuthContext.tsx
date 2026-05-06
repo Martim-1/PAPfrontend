@@ -64,6 +64,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (partial) {
             setUser(partial as User);
             setLoading(false);
+            // Retry em background para obter storeId e dados completos
+            const retry = async () => {
+              try {
+                const r = await fetch(`${API_URL}/auth/me`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (r.ok) {
+                  const data = await r.json();
+                  setUser(data);
+                }
+              } catch {}
+            };
+            setTimeout(retry, 3000);
             return;
           }
         }
