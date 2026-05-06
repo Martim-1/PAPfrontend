@@ -2,6 +2,16 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { loginUser, API_URL } from "@/api";
 import { User } from "@/data/types";
 
+const decodeTokenPayload = (token: string): Partial<User> | null => {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    return { id: decoded.id, email: decoded.email, role: decoded.role } as Partial<User>;
+  } catch {
+    return null;
+  }
+};
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
@@ -47,6 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       } catch (error) {
         clearTimeout(timeoutId);
+        // Se foi timeout/erro de rede, mantém o utilizador logado com dados do token
+        const isNetworkError = (error as Error)?.name === 'AbortError' || (error as Error)?.message?.includes('fetch');
+        if (isNetworkError) {
+          const partial = decodeTokenPayload(token);
+          if (partial) {
+            setUser(partial as User);
+            setLoading(false);
+            return;
+          }
+        }
         localStorage.removeItem("token");
         setUser(null);
         setLoading(false);
