@@ -27,6 +27,7 @@ const MapEditor: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const [sections, setSections] = useState<Section[]>([]);
   const [shelves, setShelves] = useState<Shelf[]>([]);
+  const rafRef = React.useRef<number | null>(null);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [selectedShelf, setSelectedShelf] = useState<Shelf | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -131,28 +132,26 @@ const MapEditor: React.FC = () => {
     const scaleX = 620 / rect.width;
     const scaleY = 520 / rect.height;
 
-    const newX = Math.max(
-      10,
-      Math.min(600, (e.clientX - rect.left) * scaleX - dragOffset.x)
-    );
-    const newY = Math.max(
-      10,
-      Math.min(500, (e.clientY - rect.top) * scaleY - dragOffset.y)
-    );
+    const newX = Math.max(10, Math.min(600, (e.clientX - rect.left) * scaleX - dragOffset.x));
+    const newY = Math.max(10, Math.min(500, (e.clientY - rect.top) * scaleY - dragOffset.y));
 
-    if (selectedSection) {
-      setSections(prev =>
-        prev.map(s =>
-          s.id === selectedSection.id ? { ...s, x: newX, y: newY } : s
-        )
-      );
-    } else if (selectedShelf) {
-      setShelves(prev =>
-        prev.map(s =>
-          s.id === selectedShelf.id ? { ...s, x: newX, y: newY } : s
-        )
-      );
-    }
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (selectedSection) {
+        setSections(prev =>
+          prev.map(s =>
+            s.id === selectedSection.id ? { ...s, x: newX, y: newY } : s
+          )
+        );
+      } else if (selectedShelf) {
+        setShelves(prev =>
+          prev.map(s =>
+            s.id === selectedShelf.id ? { ...s, x: newX, y: newY } : s
+          )
+        );
+      }
+    });
   };
 
   const handleMapClick = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -245,13 +244,14 @@ const MapEditor: React.FC = () => {
       setStoreId(managerStoreId);
       setStoreName(managerStoreName);
       fetchMap(managerStoreId);
-      return;
     }
+  }, [managerStoreId, managerStoreName]);
 
-    if (storeId) {
+  useEffect(() => {
+    if (!managerStoreId && storeId) {
       fetchMap(storeId);
     }
-  }, [managerStoreId, managerStoreName, storeId]);
+  }, [storeId]);
 
   const handleCreateStore = async () => {
     if (managerStoreId) {
