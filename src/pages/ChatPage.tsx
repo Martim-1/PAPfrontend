@@ -11,6 +11,8 @@ import {
   User,
   ArrowLeft,
   AlertTriangle,
+  ImagePlus,
+  X,
 } from "lucide-react";
 
 type Conversation = {
@@ -28,6 +30,7 @@ type Conversation = {
 type ChatMessage = {
   _id: string;
   content: string;
+  imageUrl?: string | null;
   createdAt: string;
   from: {
     _id: string;
@@ -76,6 +79,9 @@ const ChatPage: React.FC = () => {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
 
   const token = localStorage.getItem("token");
   const headers = {
@@ -172,14 +178,51 @@ const ChatPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [selectedConversation?.id]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Send message on Enter, but allow Shift+Enter for new lines
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!selectedConversation) return;
+
+    // Image-only send
+    if (imageFile) {
+      setSending(true);
+      try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        formData.append("toUserId", selectedConversation.id);
+        const res = await fetch(`${API_URL}/chat/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.message || "Falha ao enviar imagem");
+        }
+        const message: ChatMessage = await res.json();
+        setMessages((prev) => [...prev, message]);
+        setImageFile(null);
+        setImagePreview(null);
+        // If there's also text, fall through to send it
+        if (!newMessage.trim()) { fetchConversations(); setSending(false); return; }
+      } catch (error) {
+        toast({ title: "Erro", description: (error as Error).message, variant: "destructive" });
+        setSending(false);
+        return;
+      }
+    }
+
     if (!newMessage.trim()) {
-      toast({
-        title: "Erro",
-        description: "Escreva uma mensagem antes de enviar",
-        variant: "destructive",
-      });
+      if (!imageFile) {
+        toast({ title: "Erro", description: "Escreva uma mensagem ou escolha uma imagem", variant: "destructive" });
+      }
+      setSending(false);
       return;
     }
 
@@ -359,7 +402,16 @@ const ChatPage: React.FC = () => {
                               <div className="mb-1 font-semibold">
                                 {fromMe ? "Você" : formatDisplayName(message.from)}
                               </div>
-                              <p>{message.content}</p>
+                              {message.imageUrl && (
+                                <a href={`${API_URL.replace('/api', '')}${message.imageUrl}`} target="_blank" rel="noreferrer">
+                                  <img
+                                    src={`${API_URL.replace('/api', '')}${message.imageUrl}`}
+                                    alt="imagem"
+                                    className="max-w-[240px] max-h-[240px] rounded-2xl object-cover mb-1 cursor-pointer hover:opacity-90"
+                                  />
+                                </a>
+                              )}
+                              {message.content && <p>{message.content}</p>}
                               <div className="mt-2 text-xs text-slate-500">
                                 {new Date(message.createdAt).toLocaleString()}
                               </div>
@@ -371,23 +423,60 @@ const ChatPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    rows={3}
-                    placeholder="Escreva a sua mensagem..."
-                    className="min-h-[108px] flex-1 resize-none rounded-3xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSendMessage}
-                    disabled={sending}
-                    className="inline-flex items-center justify-center gap-2 rounded-3xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Send className="h-4 w-4" />
-                    {sending ? "A enviar..." : "Enviar mensagem"}
-                  </button>
+                <div className="mt-4 flex flex-col gap-3">
+                  {/* Image preview */}
+                  {imagePreview && (
+                    <div className="relative inline-block self-start">
+                      <img src={imagePreview} alt="preview" className="max-h-32 rounded-2xl border border-border object-cover" />
+                      <button
+                        onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        className="absolute -top-2 -right-2 rounded-full bg-destructive p-0.5 text-white hover:bg-destructive/80"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    {/* Hidden file input */}
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setImageFile(file);
+                        setImagePreview(URL.createObjectURL(file));
+                        e.target.value = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      className="flex-shrink-0 inline-flex items-center justify-center rounded-3xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground hover:bg-muted transition"
+                      title="Enviar imagem"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                    </button>
+                    <textarea
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      rows={3}
+                      placeholder="Escreva a sua mensagem..."
+                      className="min-h-[108px] flex-1 resize-none rounded-3xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendMessage}
+                      disabled={sending}
+                      className="inline-flex items-center justify-center gap-2 rounded-3xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Send className="h-4 w-4" />
+                      {sending ? "A enviar..." : "Enviar"}
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (

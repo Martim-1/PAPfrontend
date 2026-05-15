@@ -57,23 +57,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       } catch (error) {
         clearTimeout(timeoutId);
-        // Se foi timeout/erro de rede, mantém o utilizador logado com dados do token
         const isNetworkError = (error as Error)?.name === 'AbortError' || (error as Error)?.message?.includes('fetch');
         if (isNetworkError) {
           const partial = decodeTokenPayload(token);
           if (partial) {
             setUser(partial as User);
             setLoading(false);
-            // Retry em background para obter storeId e dados completos
             const retry = async () => {
               try {
                 const r = await fetch(`${API_URL}/auth/me`, {
                   headers: { Authorization: `Bearer ${token}` },
                 });
-                if (r.ok) {
-                  const data = await r.json();
-                  setUser(data);
-                }
+                if (r.ok) { const data = await r.json(); setUser(data); }
               } catch {}
             };
             setTimeout(retry, 3000);

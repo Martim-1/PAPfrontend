@@ -30,9 +30,17 @@ export const useApi = () => {
       });
 
       if (res.status === 401) {
-        // Token expirado
-        await logout();
-        throw new Error('Sessão expirada');
+        // Token expirado - apenas fazer logout se for uma rota crítica
+        const criticalEndpoints = ['/auth/me', '/auth/refresh', '/auth/verify'];
+        if (criticalEndpoints.some(ep => endpoint.includes(ep))) {
+          await logout();
+          throw new Error('Sessão expirada');
+        }
+        // Para outras rotas, retornar array vazio ou erro silenciosamente
+        if (endpoint.includes('requests') || endpoint.includes('list')) {
+          return [];
+        }
+        throw new Error('Não autorizado');
       }
 
       if (!res.ok) {

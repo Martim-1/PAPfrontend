@@ -352,80 +352,124 @@ const ProfilePage: React.FC = () => {
 
         {/* Mudar Password */}
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <div className="p-4 sm:p-6 space-y-4">
-            <button
-              onClick={() => setIsChangingPassword(!isChangingPassword)}
-              className="w-full flex items-center justify-between hover:bg-muted/50 p-2 rounded-lg transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">Segurança</h2>
-              </div>
-              <span className="text-2xl text-muted-foreground">{isChangingPassword ? '−' : '+'}</span>
-            </button>
+          <div className="p-4 sm:p-6 space-y-6">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Alterar Password</h2>
+            </div>
 
-            {isChangingPassword && (
-              <div className="space-y-4 pt-4 border-t border-border">
+            {!isChangingPassword ? (
+              <Button
+                onClick={() => setIsChangingPassword(true)}
+                className="w-full sm:w-auto flex items-center gap-2"
+              >
+                <Key className="w-4 h-4" />
+                Mudar Password
+              </Button>
+            ) : (
+              <div className="space-y-4">
                 {!codeSent ? (
-                  <>
+                  <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      Vamos enviar um código de verificação para <strong>{user?.email}</strong>.
+                      Será enviado um código de verificação para o seu email: <strong>{user?.email}</strong>
                     </p>
-                    <Button onClick={handleSendCode} disabled={isSendingCode} className="flex items-center gap-2">
+                    <Button
+                      onClick={handleSendCode}
+                      disabled={isSendingCode}
+                      className="w-full flex items-center justify-center gap-2"
+                    >
                       <Send className="w-4 h-4" />
-                      {isSendingCode ? 'A enviar...' : 'Enviar código para o meu email'}
+                      {isSendingCode ? 'Enviando...' : 'Enviar Código'}
                     </Button>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                      <ShieldCheck className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      Código enviado para <strong>{user?.email}</strong>. Expira em 10 minutos.
-                    </div>
-
+                  <div className="space-y-4">
+                    {/* Código de verificação */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Código de verificação <span className="text-destructive">*</span></label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Código de Verificação (6 dígitos)
+                      </label>
                       <Input
                         type="text"
-                        inputMode="numeric"
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
                         placeholder="000000"
-                        className="text-center text-2xl tracking-widest font-mono"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        maxLength={6}
+                        className="text-center tracking-widest text-lg font-mono"
                       />
                     </div>
 
+                    {/* Nova Password */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Nova Password <span className="text-destructive">*</span></label>
-                      <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Nova Password <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        type="password"
+                        placeholder="Mínimo 6 caracteres"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
                     </div>
 
+                    {/* Confirmar Password */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Confirmar Password <span className="text-destructive">*</span></label>
-                      <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirme a nova password" />
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Confirmar Password <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        type="password"
+                        placeholder="Confirme a nova password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
                     </div>
 
-                    <div className="flex gap-3 pt-2">
-                      <Button onClick={handleChangePassword} disabled={isChangingPasswordLoading}>
-                        {isChangingPasswordLoading ? 'A processar...' : 'Alterar Password'}
+                    {/* Botões de ação */}
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        onClick={handleChangePassword}
+                        disabled={isChangingPasswordLoading}
+                        className="flex-1 flex items-center justify-center gap-2"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        {isChangingPasswordLoading ? 'Alterando...' : 'Alterar Password'}
                       </Button>
-                      <Button variant="outline" disabled={resendCooldown > 0} onClick={handleSendCode}>
-                        {resendCooldown > 0 ? `Reenviar (${resendCooldown}s)` : 'Reenviar código'}
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setCodeSent(false);
+                          setVerificationCode('');
+                          setNewPassword('');
+                          setConfirmPassword('');
+                        }}
+                      >
+                        Cancelar
                       </Button>
                     </div>
-                  </>
+
+                    {resendCooldown > 0 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        Pode reenviar código em: <strong>{resendCooldown}s</strong>
+                      </p>
+                    )}
+
+                    {resendCooldown === 0 && codeSent && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCodeSent(false);
+                          setVerificationCode('');
+                        }}
+                        className="w-full text-xs"
+                      >
+                        Reenviar Código
+                      </Button>
+                    )}
+                  </div>
                 )}
-
-                <Button variant="ghost" size="sm" onClick={() => {
-                  setIsChangingPassword(false);
-                  setCodeSent(false);
-                  setVerificationCode('');
-                  setNewPassword('');
-                  setConfirmPassword('');
-                }}>
-                  Cancelar
-                </Button>
               </div>
             )}
           </div>
@@ -435,10 +479,10 @@ const ProfilePage: React.FC = () => {
         <div className="bg-info-light border border-info/30 rounded-xl p-4 sm:p-6">
           <h3 className="font-semibold text-info mb-3">Dicas de Segurança</h3>
           <ul className="space-y-2 text-sm text-info-foreground">
-            <li>• Altere a sua password regularmente</li>
-            <li>• Use uma password segura com letras, números e símbolos</li>
             <li>• Mantenha o seu perfil atualizado com informações corretas</li>
-            <li>• Não partilhe a sua password com ninguém</li>
+            <li>• Não partilhe os seus dados com ninguém</li>
+            <li>• Use passwords fortes e únicas</li>
+            <li>• Faça logout quando terminar</li>
           </ul>
         </div>
       </div>

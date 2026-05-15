@@ -98,6 +98,15 @@ const CustomerDashboard: React.FC = () => {
     return () => clearTimeout(debounce);
   }, [storeQuery]);
 
+  // Refresh store employees every 30 seconds so shifts activate automatically
+  useEffect(() => {
+    if (!selectedStoreId) return;
+    const interval = setInterval(() => {
+      loadStoreEmployees(selectedStoreId);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [selectedStoreId]);
+
   // Calculate suggested products based on search history from the store
   const suggestedProducts = useMemo(() => {
     if (!selectedStoreId || storeProducts.length === 0) {

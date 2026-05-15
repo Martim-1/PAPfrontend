@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowRight, UserPlus, Sun, Moon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { registerUser } from "@/api";
+import { registerUser, API_URL } from "@/api";
 import logo from '@/assets/logo.png';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -17,10 +17,18 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stats, setStats] = useState<{ employees: number; products: number; stores: number } | null>(null);
   const { login, isAuthenticated, loading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    fetch(`${API_URL}/auth/stats`)
+      .then((r) => r.json())
+      .then((data) => setStats(data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
@@ -124,9 +132,9 @@ const Login: React.FC = () => {
           </p>
           <div className="mt-12 grid grid-cols-3 gap-4">
             {[
-              { value: '30+', label: 'Produtos' },
-              { value: '8', label: 'Secções' },
-              { value: '6', label: 'Funcionários' },
+              { value: stats ? `${stats.products}` : '—', label: 'Produtos' },
+              { value: stats ? `${stats.stores}` : '—', label: 'Lojas' },
+              { value: stats ? `${stats.employees}` : '—', label: 'Funcionários' },
             ].map((stat) => (
               <div key={stat.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                 <p className="text-2xl font-bold text-white">{stat.value}</p>

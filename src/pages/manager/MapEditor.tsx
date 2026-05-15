@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Section, Shelf, EntryPoint } from '@/data/types';
-import { Plus, Trash2, Move, Edit2, Save, Grid3X3, MapPin } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, Grid3X3, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,13 +32,13 @@ const MapEditor: React.FC = () => {
   const [selectedShelf, setSelectedShelf] = useState<Shelf | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [movingItemId, setMovingItemId] = useState<string | null>(null);
   const managerStoreId = user?.storeId || '';
   const managerStoreName = user?.storeName || '';
   const [storeId, setStoreId] = useState<string>(managerStoreId);
   const [storeName, setStoreName] = useState<string>(managerStoreName);
   const [isAddingSectionOpen, setIsAddingSectionOpen] = useState(false);
   const [isAddingShelfOpen, setIsAddingShelfOpen] = useState(false);
-  const [editMode, setEditMode] = useState<'select' | 'move' | 'resize'>('select');
   const [entryMoveMode, setEntryMoveMode] = useState(false);
 
   const [newSection, setNewSection] = useState({
@@ -74,11 +74,25 @@ const MapEditor: React.FC = () => {
     setIsDragging(false);
   };
 
+  const handleSectionDoubleClick = (e: React.MouseEvent, section: Section) => {
+    e.stopPropagation();
+    setMovingItemId(prev => prev === section.id ? null : section.id);
+    setSelectedSection(section);
+    setSelectedShelf(null);
+  };
+
+  const handleShelfDoubleClick = (e: React.MouseEvent, shelf: Shelf) => {
+    e.stopPropagation();
+    setMovingItemId(prev => prev === shelf.id ? null : shelf.id);
+    setSelectedShelf(shelf);
+    setSelectedSection(null);
+  };
+
   const handleSectionMouseDown = (e: React.MouseEvent, section: Section) => {
     if (entryMoveMode) return;
     (e.currentTarget as Element).setPointerCapture?.((e as any).pointerId);
 
-    if (editMode !== 'move') {
+    if (movingItemId !== section.id) {
       setSelectedSection(section);
       setSelectedShelf(null);
       return;
@@ -104,7 +118,7 @@ const MapEditor: React.FC = () => {
     (e.currentTarget as Element).setPointerCapture?.((e as any).pointerId);
     e.stopPropagation();
 
-    if (editMode !== 'move') {
+    if (movingItemId !== shelf.id) {
       setSelectedShelf(shelf);
       setSelectedSection(null);
       return;
@@ -132,8 +146,14 @@ const MapEditor: React.FC = () => {
     const scaleX = 620 / rect.width;
     const scaleY = 520 / rect.height;
 
-    const newX = Math.max(10, Math.min(600, (e.clientX - rect.left) * scaleX - dragOffset.x));
-    const newY = Math.max(10, Math.min(500, (e.clientY - rect.top) * scaleY - dragOffset.y));
+    const newX = Math.max(
+      10,
+      Math.min(600, (e.clientX - rect.left) * scaleX - dragOffset.x)
+    );
+    const newY = Math.max(
+      10,
+      Math.min(500, (e.clientY - rect.top) * scaleY - dragOffset.y)
+    );
 
     if (rafRef.current !== null) return;
     rafRef.current = requestAnimationFrame(() => {
@@ -155,7 +175,12 @@ const MapEditor: React.FC = () => {
   };
 
   const handleMapClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (isDragging || !entryMoveMode) return;
+    if (isDragging) return;
+    if (!entryMoveMode) {
+      // Click on background clears move mode
+      setMovingItemId(null);
+      return;
+    }
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();
     const scaleX = 620 / rect.width;
@@ -244,13 +269,13 @@ const MapEditor: React.FC = () => {
       setStoreId(managerStoreId);
       setStoreName(managerStoreName);
       fetchMap(managerStoreId);
+      return;
     }
+
   }, [managerStoreId, managerStoreName]);
 
   useEffect(() => {
-    if (!managerStoreId && storeId) {
-      fetchMap(storeId);
-    }
+    if (!managerStoreId && storeId) fetchMap(storeId);
   }, [storeId]);
 
   const handleCreateStore = async () => {
@@ -438,31 +463,26 @@ const MapEditor: React.FC = () => {
             <CardContent className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
                 <Label className="text-xs sm:text-sm">Modo de Edição</Label>
-                <div className="grid grid-cols-2 gap-1 sm:gap-2">
+                <div className="flex flex-col gap-1 sm:gap-2">
                   <Button
-                    variant={editMode === 'select' ? 'default' : 'outline'}
+                    variant={!entryMoveMode ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => { setEditMode('select'); setEntryMoveMode(false); }}
-                    className="gap-1 text-xs h-8 sm:h-auto"
+                    onClick={() => setEntryMoveMode(false)}
+                    className="gap-1 text-xs h-8 sm:h-auto w-full"
                   >
-                    <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" /> Sel
-                  </Button>
-                  <Button
-                    variant={editMode === 'move' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => { setEditMode('move'); setEntryMoveMode(false); }}
-                    className="gap-1 text-xs h-8 sm:h-auto"
-                  >
-                    <Move className="w-3 h-3 sm:w-4 sm:h-4" /> Mover
+                    <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" /> Selecionar
                   </Button>
                   <Button
                     variant={entryMoveMode ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => { setEntryMoveMode((prev) => !prev); setEditMode('select'); }}
-                    className="gap-1 text-xs col-span-2 h-8 sm:h-auto"
+                    onClick={() => setEntryMoveMode((prev) => !prev)}
+                    className="gap-1 text-xs h-8 sm:h-auto w-full"
                   >
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4" /> Entrada
                   </Button>
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Duplo clique numa secção ou prateleira para a mover.
+                  </p>
                 </div>
               </div>
 
@@ -667,8 +687,15 @@ const MapEditor: React.FC = () => {
                   {/* Sections */}
                   {sections.map((section) => {
                     const isSelected = selectedSection?.id === section.id;
+                    const isMoving = movingItemId === section.id;
                     return (
-                      <g key={section.id} onPointerDown={(e) => handleSectionMouseDown(e as unknown as React.MouseEvent, section)} className={`${editMode === 'move' ? 'cursor-move' : 'cursor-pointer'}`}>
+                      <g
+                        key={section.id}
+                        onPointerDown={(e) => handleSectionMouseDown(e as unknown as React.MouseEvent, section)}
+                        onDoubleClick={(e) => handleSectionDoubleClick(e as unknown as React.MouseEvent, section)}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`${isMoving ? 'cursor-move' : 'cursor-pointer'}`}
+                      >
                         <rect
                           x={section.x}
                           y={section.y}
@@ -677,8 +704,9 @@ const MapEditor: React.FC = () => {
                           fill={getSectionColor(section.id)}
                           opacity={isSelected ? 0.9 : 0.7}
                           rx="8"
-                          stroke={isSelected ? 'hsl(var(--primary))' : 'transparent'}
-                          strokeWidth={isSelected ? 3 : 0}
+                          stroke={isSelected ? 'hsl(var(--primary))' : isMoving ? '#fbbf24' : 'transparent'}
+                          strokeWidth={isSelected ? 3 : isMoving ? 2 : 0}
+                          strokeDasharray={isMoving && !isSelected ? '6 3' : undefined}
                         />
                         <text x={section.x + section.width / 2} y={section.y + section.height / 2} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="12" fontWeight="600" className="pointer-events-none select-none">{section.name}</text>
                       </g>
@@ -688,9 +716,21 @@ const MapEditor: React.FC = () => {
                   {/* Shelves */}
                   {shelves.map((shelf) => {
                     const isSelected = selectedShelf?.id === shelf.id;
+                    const isMoving = movingItemId === shelf.id;
                     return (
-                      <g key={shelf.id} onPointerDown={(e) => handleShelfMouseDown(e as unknown as React.MouseEvent, shelf)} className={`${editMode === 'move' ? 'cursor-move' : 'cursor-pointer'}`}>
-                        <rect x={shelf.x - 15} y={shelf.y - 10} width="30" height="20" fill={isSelected ? 'hsl(var(--primary))' : 'hsl(var(--card))'} stroke={isSelected ? 'hsl(var(--accent))' : 'hsl(var(--border))'} strokeWidth={isSelected ? 2 : 1} rx="4" />
+                      <g
+                        key={shelf.id}
+                        onPointerDown={(e) => handleShelfMouseDown(e as unknown as React.MouseEvent, shelf)}
+                        onDoubleClick={(e) => handleShelfDoubleClick(e as unknown as React.MouseEvent, shelf)}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`${isMoving ? 'cursor-move' : 'cursor-pointer'}`}
+                      >
+                        <rect x={shelf.x - 15} y={shelf.y - 10} width="30" height="20"
+                          fill={isSelected ? 'hsl(var(--primary))' : isMoving ? '#fef08a' : 'hsl(var(--card))'}
+                          stroke={isSelected ? 'hsl(var(--accent))' : isMoving ? '#fbbf24' : 'hsl(var(--border))'}
+                          strokeWidth={isSelected || isMoving ? 2 : 1}
+                          strokeDasharray={isMoving && !isSelected ? '3 2' : undefined}
+                          rx="4" />
                         <text x={shelf.x} y={shelf.y} textAnchor="middle" dominantBaseline="middle" fill={isSelected ? 'hsl(var(--primary-foreground))' : 'hsl(var(--foreground))'} fontSize="8" fontWeight="500" className="pointer-events-none select-none">{shelf.name.split(' ')[1] || 'P'}</text>
                       </g>
                     );

@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { ApiEmployee } from "@/data/types";
 import {
   Users, Plus, Trash2, UserPlus, Search, MoreHorizontal,
-  UserX, Mail, Phone, Clock, ArrowLeftRight, RefreshCw,
+  UserX, Mail, Phone, Clock, ArrowLeftRight, RefreshCw, AlarmClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,11 @@ const ManagerEmployees: React.FC = () => {
 
   // Assign / move
   const [targetSectionId, setTargetSectionId] = useState("");
+
+  // Shift modal
+  const [showShiftModal, setShowShiftModal] = useState<{ emp: ApiEmployee; sectionId: string; sectionName: string } | null>(null);
+  const [shiftStart, setShiftStart] = useState("");
+  const [shiftEnd, setShiftEnd] = useState("");
 
   // ─── Data Fetching ────────────────────────────────────────────────────────
   const fetchEmployees = async () => {
@@ -205,6 +210,35 @@ const ManagerEmployees: React.FC = () => {
       toast({ title: "Funcionário movido com sucesso" });
       setShowMoveModal(null);
       setTargetSectionId("");
+      await fetchEmployees();
+    } catch (err) {
+      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
+    } finally { setLoading(false); }
+  };
+
+  const openShiftModal = (emp: ApiEmployee, sectionId: string, sectionName: string) => {
+    const existing = emp.sections?.find(s => s.sectionId === sectionId);
+    setShiftStart(existing?.shiftStart || "");
+    setShiftEnd(existing?.shiftEnd || "");
+    setShowShiftModal({ emp, sectionId, sectionName });
+  };
+
+  const saveShift = async () => {
+    if (!showShiftModal) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${API_URL}/manager/employees/${showShiftModal.emp._id}/section/${showShiftModal.sectionId}/shift`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ shiftStart: shiftStart || null, shiftEnd: shiftEnd || null }),
+        }
+      );
+      if (!res.ok) throw new Error((await res.json()).message || "Erro");
+      toast({ title: "Turno atualizado", description: `${showShiftModal.sectionName}: ${shiftStart || "--"} – ${shiftEnd || "--"}` });
+      setShowShiftModal(null);
       await fetchEmployees();
     } catch (err) {
       toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
@@ -422,10 +456,24 @@ const ManagerEmployees: React.FC = () => {
                                     style={{ backgroundColor: getSectionColor(s.sectionId) }}
                                   />
                                   <span className="truncate max-w-[80px]">{s.sectionName}</span>
+                                  {s.shiftStart && s.shiftEnd && (
+                                    <span className="text-muted-foreground">{s.shiftStart}–{s.shiftEnd}</span>
+                                  )}
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent side="top">
                                 <p className="font-medium text-xs">{s.sectionName}</p>
+                                {s.shiftStart && s.shiftEnd ? (
+                                  <p className="text-muted-foreground text-[10px] flex items-center gap-1 mt-0.5">
+                                    <AlarmClock className="w-3 h-3" />
+                                    Turno: {s.shiftStart} – {s.shiftEnd}
+                                  </p>
+                                ) : (
+                                  <p className="text-muted-foreground text-[10px] flex items-center gap-1 mt-0.5">
+                                    <AlarmClock className="w-3 h-3" />
+                                    Sem turno definido
+                                  </p>
+                                )}
                                 {s.assignedAt && (
                                   <p className="text-muted-foreground text-[10px] flex items-center gap-1 mt-0.5">
                                     <Clock className="w-3 h-3" />
@@ -488,6 +536,27 @@ const ManagerEmployees: React.FC = () => {
                             {/* Move from section */}
                             {emp.sections && emp.sections.length > 0 && (
                               <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel className="text-[10px] font-medium text-muted-foreground px-2 py-1">
+                                  Definir turno
+                                </DropdownMenuLabel>
+                                {emp.sections.map(s => (
+                                  <DropdownMenuItem
+                                    key={s.sectionId}
+                                    onClick={() => openShiftModal(emp, s.sectionId, s.sectionName)}
+                                    className="text-xs"
+                                  >
+                                    <AlarmClock className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+                                    <span
+                                      className="w-2 h-2 rounded-full mr-1.5 flex-shrink-0"
+                                      style={{ backgroundColor: getSectionColor(s.sectionId) }}
+                                    />
+                                    {s.sectionName}
+                                    {s.shiftStart && s.shiftEnd && (
+                                      <span className="ml-auto text-muted-foreground">{s.shiftStart}–{s.shiftEnd}</span>
+                                    )}
+                                  </DropdownMenuItem>
+                                ))}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuLabel className="text-[10px] font-medium text-muted-foreground px-2 py-1">
                                   Mover de secção
@@ -677,6 +746,68 @@ const ManagerEmployees: React.FC = () => {
               </Button>
               <Button variant="outline" onClick={() => setShowAssignModal(null)}>Cancelar</Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Definir Turno ────────────────────────────────────────── */}
+      {showShiftModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl p-6 w-full max-w-sm space-y-4 shadow-xl">
+            <div className="flex items-center gap-2">
+              <AlarmClock className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-lg">Definir Turno</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {showShiftModal.emp.name || showShiftModal.emp.email} &nbsp;·&nbsp;
+              <strong>{showShiftModal.sectionName}</strong>
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="shift-start">Hora de Entrada</Label>
+                <input
+                  id="shift-start"
+                  type="time"
+                  value={shiftStart}
+                  onChange={e => setShiftStart(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="shift-end">Hora de Saída</Label>
+                <input
+                  id="shift-end"
+                  type="time"
+                  value={shiftEnd}
+                  onChange={e => setShiftEnd(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O funcionário só aparecerá como activo nesta secção entre as horas definidas.
+            </p>
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={saveShift} disabled={loading}>
+                {loading ? "A guardar…" : "Guardar Turno"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => { setShiftStart(""); setShiftEnd(""); setShowShiftModal(null); }}
+              >
+                Cancelar
+              </Button>
+            </div>
+            {(shiftStart || shiftEnd) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-destructive hover:text-destructive text-xs"
+                onClick={() => { setShiftStart(""); setShiftEnd(""); }}
+              >
+                Limpar turno
+              </Button>
+            )}
           </div>
         </div>
       )}

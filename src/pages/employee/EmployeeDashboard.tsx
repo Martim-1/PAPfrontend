@@ -66,7 +66,8 @@ const EmployeeDashboard: React.FC = () => {
       const data = await makeRequest('/employee/requests');
       setRequests(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Erro ao buscar solicitações:', error);
+      // Silenciosamente ignorar erros - setRequests será um array vazio por padrão
+      setRequests([]);
     }
   }, [makeRequest]);
 
@@ -89,14 +90,11 @@ const EmployeeDashboard: React.FC = () => {
         setMapEmployees(Array.isArray(employeesData) ? employeesData : []);
         setTasks(Array.isArray(tasksData) ? tasksData : []);
       } catch (error) {
-        console.error('Erro ao carregar dados:', error);
+        // Silenciosamente ignorar erros de carregamento
       }
 
-      try {
-        await fetchRequestsForRefresh();
-      } catch (error) {
-        console.error('Erro ao carregar solicitações:', error);
-      }
+      // Carregar solicitações de forma independente
+      await fetchRequestsForRefresh();
     };
 
     if (user) {
@@ -130,6 +128,18 @@ const EmployeeDashboard: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [user?.role, fetchRequestsForRefresh]);
+
+  // Refresh map employees every 30 seconds so shifts activate automatically
+  React.useEffect(() => {
+    if (!user?.storeId) return;
+    const interval = setInterval(async () => {
+      try {
+        const data = await makeRequest(`/map/employees?storeId=${encodeURIComponent(user.storeId!)}`);
+        setMapEmployees(Array.isArray(data) ? data : []);
+      } catch { /* silently ignore */ }
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [user?.storeId, makeRequest]);
 
   const handleDragStart = useCallback((e: React.DragEvent, product: Product) => {
     setDraggingProduct(product);

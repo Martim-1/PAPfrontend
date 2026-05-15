@@ -50,6 +50,8 @@ export interface ApiEmployee {
     sectionId: string;
     sectionName: string;
     assignedAt?: string;
+    shiftStart?: string; // "HH:MM"
+    shiftEnd?: string;   // "HH:MM"
   }>;
 }
 
